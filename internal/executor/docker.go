@@ -77,7 +77,12 @@ func (e *DockerExecutor) Run() error {
 	if err := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
 		return err
 	}
-
+	e.cancel = func() {
+		if err := cli.ContainerStop(ctx, resp.ID, nil); err != nil {
+			utils.LogErr(fmt.Sprintf("docker stop %s err", resp.ID), err)
+		}
+		fn()
+	}
 	statusCh, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
 	select {
 	case err := <-errCh:
